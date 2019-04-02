@@ -1,13 +1,141 @@
-Version: 1.0
+### 데이터 조작
+## 데이터 프레임과 관련하여 조작해보자
+## 여러가지 함수
+# filter() -> 행추출작업, 개체를 뽑아내는 작업이다. 가로 안에 들어갈 인자는 조건식이어야 한다. 속성과 관련해서 조건식 생성
+#             주로 범주형 변수 사용하는 듯
+# select() -> 열추출작업, 변수(속성)을 뽑아내는 작업이다. 여러가지 열을 출력해서 일부 데이터프레임 조작가능, 제외시킬려면 - 사용
+#             filter함수와 select함수를 잘 조합해서 뽑아내는게 관건인 듯
+# arrange() -> 정렬함수이다. 기본값은 오름차순으로 정리. 어떤 기준으로 정렬하는지 옵션파라미터를 아직 모름.
+# mutate() -> 변수추가작업, 변수 추가는 기존의 데이터조작에서도 봤지만 이건 '보기'형태로 보여주고 실제로 조작은 안되는 것 같음
+# summarise() -> 통계치산출작업, summary()함수와 무슨 차이인지 파악이 안됨.
+# group_by() -> 집단별로나누기, 필터와 실렉트 함수의 일반화함수인듯
+# left_join() -> 데이터 합치기(열)
+# bind_rows() -> 데이터 합치기(행)
 
-RestoreWorkspace: Default
-SaveWorkspace: Default
-AlwaysSaveHistory: Default
+library(dplyr)
+exam <- read.csv("csv_exam.csv")
+exam
+exam %>% filter(class == 1)
+exam %>% filter(math > 50) 
+## 연속형 자료로 조건식을 작성하는 것도 중요할 듯, 상관관계분석시 좋을 듯
+exam %>% filter(class == 1 & math >= 50)
+## and의 의미로 쓰이는 연산자: "&", or의미로 쓰이는 연산자: "|"
+exam %>% filter(class == 1 | class == 2 | class == 3)
+## 매칭 연산자, 여러번 시도해보는 것도 중요할 듯 "%in%"
+exam %>% filter(class %in% c(1, 3, 5))
+## %in% 연산자도 논리연산자인가? 매칭 연산자는 그래도 주로 범주형 변수에 적용해서 행추출 시 사용하는 게 좋을 듯.
+exam %>% filter(math %in% c(50, 60 ,70))
+## 예를 들어 연속형 자료에서 100점이 있는지 없는지 확인할 수 도 있겠다.
+## 추출한 행으로 데이터 만들기.
+## 아마 %>% 연산자는 "보기" 역할만 하는 것 같음. 조작은 변수에 할당해야 조작이 가능.
+class1 <- exam %>% filter(class == 1)
+class2 <- exam %>% filter(class == 2)
+mean(class1$math)
+mean(class2$math)
+#############################################################################################################################################
+## 혼자서 해보기
+## mpg 데이터를 이용해 분석문제를 해결해 보세요.
+# Q1. 자동차 배기량에 따라 고속도로 연비가 다른지 알아보려고 합니다. displ(배기량)이 4이하인 자동차와 5이상인 자동차 중 어떤
+#     자동차의 hwy(고속도로연비)가 평균적으로 높은지 알아보세요.
+library(ggplot2)
+mpg <- as.data.frame(ggplot2::mpg)
+head(mpg)
+displ4 <- mpg %>% filter(displ <= 4)
+displ5 <- mpg %>%  filter(displ >= 5)
+mean(displ4$hwy)      #25.98=6
+mean(displ5$hwy)      #18.07 
 
-EnableCodeIndexing: Yes
-UseSpacesForTab: Yes
-NumSpacesForTab: 2
-Encoding: UTF-8
 
-RnwWeave: Sweave
-LaTeX: pdfLaTeX
+## Q2.자동차 제조회사에 따라 도시연비가 다른지 알아보려고 합니다. 
+##    "audi"와 "toyota" 중 어느 manufacturer의 cty가 평균적으로로 높은지 알아보세요.
+audi <- mpg %>% filter(manufacturer == "audi")
+toyota <- mpg %>% filter(manufacturer == "toyota")
+mean(toyota$cty)       # 17.61
+mean(audi$cty)         #18.52
+
+
+## Q3. "chevrolet","ford","honda" 자동차의 고속도로 연비평균을 알아보려고 합니다.
+##      이 회사들의 데이터를 추출한 후 hwy 전체평균을 구해보세요.
+test <- mpg %>% filter(manufacturer %in% c("chevrolet", "ford", "honda"))
+mean(test$hwy)   ## 22.50
+
+###############################################################################
+## dplyr 함수 조합하기
+## 조합할 때 중요한 것은 순서이다. 순서에 따라 논리의 층위가 결졍된다.
+
+exam %>% filter(class == 1) %>% select(english)  ## 물론 이렇게 해도 작동하지만 가독성이 떨어진다.
+exam %>%
+  filter(class == 1) %>% 
+  select(english)                      ### 가독성을 높여주기 위해 줄바꿈을 이용하자.
+
+## 순서대로 정렬하기
+## arrange()를 이용하면 원하는 순서로 정렬할 수 있다. (오름차순은 기본값, 내림차순은 desc())
+
+
+## 혼자서 해보기: mpg 데이터를 이용해 분석문제를 해결해보세요.
+# Q1. "audi"에서 생산한 자동차 중에 어떤 자동차 모델의 hwy(고속도로연비)가 높은지 알아보려고 합니다.
+##    "audi"에서 생산한 자동차 중 hwy가 1~5 위에 해당하는 자동차의 데이터를 출력하세요.
+mpg %>% 
+  filter(manufacturer == "audi") %>% 
+  arrange(desc(hwy)) %>% 
+  head(5)
+
+## 혼자서 해보기
+# mpg데이터는 연비를 나타내는 변수가 hwy(고속도로 연비), cty(도시 연비) 두 종류로 분리되어 있습니다.
+# 두 변수를 각각 활용하는 대신 하나의 통합 연비 변수를 만들어 분석하려고 합니다.
+# Q1. mpg() 데이터 복사본을 만들고, cty와 hwy를 더한 합산 연비 변수를 추가하세요.
+mpg_new <- mpg
+mpg_new <- mpg_new %>% mutate(total = (hwy + cty)/2)
+head(mpg_new)        ## 수정됬는지 확인하기
+# Q2. 앞에서 만든 '합산 연비 변수'를 2로 나눠 '평균 연비 변수'를 추가하세요.
+# Q3. 평균 연비변수가 가장 높은 자동차 3종의 데이터를 출력하세요.
+mpg_new %>% 
+  arrange(desc(total)) %>% 
+  head(3)
+# Q4. 1~3번 문제를 해결할 수 있는 하나로 연결된 dplyr구문을 만들어 실행해보세요. 데이터는 복사본 대신 mpg 원본을 이용하세요.
+mpg %>%
+  mutate(total = (cty+hwy)/2) %>%
+  arrange(desc(total)) %>%
+  head(3)
+
+#########################################################################################################333
+## 집단별로 요약하기
+## 구동방식과 진행방식에 대한 이해가 필요할 듯
+## summarise함수는 한 변수(속성,열)의 통계랼을 하나로 취합하는 것이다.
+exam %>% summarise(mean_math = mean(math)) ## 이건 전체요약통계량을 나타낸거여서 그냥 mean()함수 사용해도 되는데
+## summarise함수는 주로 집단별로 요약된 통계량을 보고 싶을 때 사용한다.
+exam %>%
+  group_by(class) %>% 
+  summarise(mean_math = mean(math))
+# 여기서 dbl은 더블의 약자로 부동 소수점을 이야기함.
+
+## summarise의 함수에 자주 쓰이는 요약통계량 함수
+# mean(), sd(), sum(), median(), min(), max(), n()
+
+## 집단을 나누고 다시 하위집단으로 나누기
+## 순서가 중요, 순서가 논리의 층위를 결정.
+mpg %>% 
+  group_by(manufacturer, drv) %>% 
+  summarise(mean_cty = mean(cty)) %>% 
+  head(10)
+
+## 혼자서 해보기
+# Q1. mpg데이터의 class는 "suv", "compact"등 자동차를 특징에 따라 일곱 종류로 분류한 변수입니다.
+#     어떤 차종의 도시 연비가 높은지 비교해보려고 합니다. class별 cty평균을 구해보세요.
+mpg %>% 
+  group_by(class) %>% 
+  summarise(mean_cty = mean(cty)) %>% 
+  arrange(desc(mean_cty))
+# Q2. 앞 문데의 출력결과는 class값 알파벳 순으로 정렬되어있습니다.
+#     어떤 차종의 도시 연비가 높은지 쉽게 알아볼 수 있도록 cty평균이 높은 순으로 정렬해 출력하세요.
+# Q3. 어떤 회사 자동차의 hwy가 가장 높은지 알아보려고 합니다. hwy평균이 가장 높은 회사 3곳을 출력하세요.
+mpg %>%
+  group_by(manufacturer) %>% 
+  summarise(mean_hwy = mean(hwy)) %>% 
+  arrange(desc(mean_hwy))
+# Q4. 어떤 회사에서 "compact" 차종을 가장 많이 생산하는지 알아보려고 합니다. 각 회사별 "compact" 차종 수를 내림차순으로 정렬해 출력
+mpg %>%
+  group_by(manufacturer) %>% 
+  filter(class == "compact") %>% 
+  summarise(fre_compact = n()) %>% 
+  arrange(desc(fre_compact))
